@@ -6,6 +6,7 @@
 #include "sensor.h"
 #include "webserver.h"
 #include "mqtt.h"
+#include "persist.h"
 
 
 AsyncWebServer server(80);
@@ -44,7 +45,7 @@ void setupWebServer() {
     response->print("</ul>");
     response->print("<h3>Pulses</h3>");
     response->print("<ul>");
-    response->printf("<li>Current number of pulses: %d</li>", getPulses());
+    response->printf("<li>Current number of pulses: %d</li>", getLiters());
     response->print("</ul>");
     response->print("<button onclick=\"sendDisco(true)\">Discovery ON</button>");
     response->print("<button onclick=\"sendDisco(false)\">Discovery OFF</button>");

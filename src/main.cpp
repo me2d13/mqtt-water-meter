@@ -6,7 +6,11 @@
 #include "sensor.h"
 #include <ESP8266WiFi.h>
 #include "webserver.h"
+#include "persist.h"
 
+// mosquitto_sub -t /devices/water-metter-5CCF7F802F8D/log
+// mosquitto_sub -t /devices/water-metter-5CCF7F802F8D/m3
+// mosquitto_pub -t /devices/water-metter-5CCF7F802F8D/set -m '{"liters":1123}'
 
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
@@ -16,16 +20,6 @@ void blick();
 
 Ticker heartBeatTimer(mqttHeartBeat, HEART_BEAT_S*1000);
 Ticker blickTimer(blick, BLICK_S*1000);
-
-void handler(u8 value) {
-  if (value) {
-    //digitalWrite(PIN_RELAY, HIGH);
-    logState(1);
-  } else {
-    //digitalWrite(PIN_RELAY, LOW);
-    logState(0);
-  }
-}
 
 void setupAndWaitForWifi() {
   WiFi.mode(WIFI_STA);
@@ -55,6 +49,7 @@ void setup() {
   //setRelayHandler(handler);
   setupSensor();
   setupWebServer();
+  setupPersist();
 }
 
 void loop() {
@@ -63,6 +58,7 @@ void loop() {
   heartBeatTimer.update();
   blickTimer.update();
   loopSensor();
+  loopPersist();
 }
 
 void blick() {

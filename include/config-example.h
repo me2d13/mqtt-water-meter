@@ -28,4 +28,8 @@
 // Node MCU
 #define PIN_PULSE D1 
 
+// Persist thresholds - after what difference state should be persisted to eeprom (if value differs)
+#define PERSIST_AFTER_LITERS 50
+#define PERSIST_AFTER_MINUTES 120
+
 #endif

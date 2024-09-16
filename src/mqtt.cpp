@@ -4,23 +4,27 @@
 #include "config.h"
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <persist.h>
+
+#define SENSOR_VERSION "5"
 
 WiFiClient net;
 PubSubClient client(net);
-StaticJsonDocument<200> doc;
 
 char buffer[100];
 char id[13];
 
-char *discoPayloadPulsesFmt = "{\"name\":\"Water4 Usage Pulses\", \"unique_id\": \"water4_pulse_%s\", \"state_topic\": \"%s\", "
+char *discoPayloadPulsesFmt = "{\"name\":\"Water" SENSOR_VERSION " Usage Pulses\", \"unique_id\": \"water" SENSOR_VERSION 
+    "_pulse_%s\", \"state_topic\": \"%s\", "
     " \"unit_of_measurement\":\"litres\", \"device\": %s, "
-    " \"value_template\": \"{%% if states(entity_id) == 'unknown' %%} {{value_json.value}} {%% else %%} {{ float(states(entity_id)) + value_json.value }} {%% endif %%}\""
+    " \"value_template\": \"{{value_json.value}}\""
     "}";
-char *discoPayloadM3Fmt = "{\"name\":\"Water4 Usage M3\", \"unique_id\": \"water4_m3_%s\", \"state_topic\": \"%s\", "
+char *discoPayloadM3Fmt = "{\"name\":\"Water" SENSOR_VERSION " Usage M3\", \"unique_id\": \"water" SENSOR_VERSION
+    "_m3_%s\", \"state_topic\": \"%s\", "
     "\"unit_of_measurement\":\"m³\", \"device\": %s, "
     " \"device_class\": \"water\", "
     " \"state_class\": \"total_increasing\", "
-    " \"value_template\": \"{%% if states(entity_id) == 'unknown' %%} {{value_json.value}} {%% else %%} {{ float(states(entity_id)) + value_json.value }} {%% endif %%}\""
+    " \"value_template\": \"{{value_json.value}}\""
     "}";
 char *deviceFmt = "{\"name\":\"Water Metter\", \"ids\": [\"water_%s\"], \"cu\": \"http://%s\"}";
 
@@ -33,7 +37,7 @@ void connectMqtt() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("watter-metter")) {
+    if (client.connect("watter-metter-" SENSOR_VERSION)) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       sprintf(buffer, "Water metter connected to MQTT with IP  %s, dedicated log %s", WiFi.localIP().toString().c_str(), logTopic().c_str());
@@ -55,10 +59,12 @@ void mqttHeartBeat() {
     mqttLog("Water metter alive");
 }
 
-void logState(int value) {
+void logState(char* message_d, int value) {
   if (client.connected()) {
-    sprintf(buffer, "Water-metter state  %d", value);
-    client.publish(logTopic().c_str(),buffer);
+    sprintf(buffer, message_d, value);
+    Serial.print("MQTT log: ");
+    Serial.println(buffer);
+    mqttLog(buffer);
   }
 }
 
@@ -76,39 +82,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-  u8 val = 0;
-  u8 valSet = 0;
+  int val = 0;
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, payload);
   if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    if (strncmp("ON", (char *) payload, 2) == 0) {
-      val = 1;
-      valSet = 1;
-    }
-    if (strncmp("OFF", (char *) payload, 3) == 0) {
-      val = 0;
-      valSet = 1;
-    }
-    if (!valSet) {
-      Serial.println("Non-json content not recognized (expected ON/OFF)");
-      return;
-    }
   } else {
-    val = doc["value"];
-    valSet = 1;
-  }
-  if (valSet) {
-      Serial.print("Setting relay to ");
-      Serial.println(val);
-//      if (relayHandler != NULL) {
-//          relayHandler(val);
-//      } else {
-          Serial.println("WARNING: relay handler not set");
-//      }
-      if (client.connected()) {
-        //client.publish(stateTopic().c_str(), val ? "ON" : "OFF");
-      }
+    val = doc["liters"];
+    Serial.print("Setting liters to ");
+    Serial.println(val);
+    if (client.connected()) {
+      sprintf(buffer, "Received liters %d", val);
+      client.publish(logTopic().c_str(),buffer);
+      saveLiters(val);
+      sendStateMessages();
+    }
   }
 }
 
@@ -176,9 +165,11 @@ uint8_t sendDiscovery(bool on) {
   return 0;
 }
 
-void sendLiterPulse() {
+void sendStateMessages() {
   if (client.connected()) {
-    client.publish(stateTopicPulses().c_str(), "{\"value\":1}");
-    client.publish(stateTopicM3().c_str(), "{\"value\":0.001}");
+    sprintf(buffer, "{\"value\":%d, \"diff\": 1}", getLiters());
+    client.publish(stateTopicPulses().c_str(), buffer);
+    sprintf(buffer, "{\"value\":%f, \"diff\": 0.001}", ((float)getLiters() / 1000));
+    client.publish(stateTopicM3().c_str(), buffer);
   }
 }

@@ -3,17 +3,9 @@
 #include <Arduino.h>
 #include <Debounce.h>
 #include "mqtt.h"
+#include "persist.h"
 
-int pulses = 0;
 int lastValue = 1;
-
-int getPulses() {
-    return pulses;
-}
-
-void setPulses(int numberOfPulses) {
-    pulses = numberOfPulses;
-}
 
 void setupSensor() {
     pinMode(PIN_PULSE, INPUT_PULLUP);
@@ -23,11 +15,11 @@ void setupSensor() {
 void loopSensor() {
     int inputValue = debouncedDigitalRead(PIN_PULSE);
     if (lastValue == 1 && inputValue == 0) {
-        ++pulses;
         lastValue = inputValue;
+        int liters = incLiters();
         Serial.print("Pulse ");
-        Serial.println(pulses);
-        sendLiterPulse();
+        Serial.println(liters);
+        sendStateMessages();
     } else {
         lastValue = inputValue;
     }

@@ -2,6 +2,7 @@
 #include "config.h"
 #include <config2eeprom.hpp>
 #include "mqtt.h"
+#include "time_utils.h"
 
 // https://github.com/geekbrother/config2eeprom
 
@@ -12,6 +13,8 @@ staticConfigDoc configHash;
 int liters = 0;
 int lastLitersSaved = 0;
 unsigned long lastSavedMilis = 0;
+String lastSavedTs = String("?");
+String lastPulseTs = String("?");
 
 void saveLiters(int numberOfLiters) {
     liters = numberOfLiters;
@@ -21,6 +24,7 @@ void saveLiters(int numberOfLiters) {
     c2e.save( c2econfig );
     lastSavedMilis = millis();
     lastLitersSaved = liters;
+    lastSavedTs = String(getTime());
 }
 
 void setupPersist() {
@@ -56,5 +60,14 @@ int incLiters() {
     saveLiters(liters);
     lastLitersSaved = liters;
   }
+  lastPulseTs = String(getTime());
   return liters;
+}
+
+String getLastSavedTs() {
+  return lastSavedTs;
+}
+
+String getLastPulseTs() {
+  return lastPulseTs;
 }

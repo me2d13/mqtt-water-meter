@@ -5,7 +5,12 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <persist.h>
+#include "time_utils.h"
 
+// just version of home assistant device + entities, used for 3 reasons:
+// 1) HA UI sometimes has problem to show refreshed entities, so by increasing this number I know 
+//    changes were applied - I'm looking at new version of entities
+// 2) I can have 2 devices with the same sw - one in "prod" and next version in dev
 #define SENSOR_VERSION "5"
 
 WiFiClient net;
@@ -13,6 +18,8 @@ PubSubClient client(net);
 
 char buffer[100];
 char id[13];
+
+String lastHeartBeatTs = String("?");
 
 char *discoPayloadPulsesFmt = "{\"name\":\"Water" SENSOR_VERSION " Usage Pulses\", \"unique_id\": \"water" SENSOR_VERSION 
     "_pulse_%s\", \"state_topic\": \"%s\", "
@@ -26,7 +33,7 @@ char *discoPayloadM3Fmt = "{\"name\":\"Water" SENSOR_VERSION " Usage M3\", \"uni
     " \"state_class\": \"total_increasing\", "
     " \"value_template\": \"{{value_json.value}}\""
     "}";
-char *deviceFmt = "{\"name\":\"Water Metter\", \"ids\": [\"water_%s\"], \"cu\": \"http://%s\"}";
+char *deviceFmt = "{\"name\":\"Water Metter " SENSOR_VERSION "\", \"ids\": [\"water_%s\"], \"cu\": \"http://%s\"}";
 
 char *getId() {
   return id;
@@ -56,7 +63,10 @@ void connectMqtt() {
 }
 
 void mqttHeartBeat() {
+  if (client.connected()) {
     mqttLog("Water metter alive");
+    lastHeartBeatTs = String(getTime());
+  }
 }
 
 void logState(char* message_d, int value) {
@@ -143,8 +153,8 @@ uint8_t sendDiscovery(bool on) {
   sprintf(deviceBuff, deviceFmt, id, WiFi.localIP().toString().c_str());
   Serial.print("Device data: ");
   Serial.println(deviceBuff);
-  String topic1 = MQTT_DISCOVERY_TOPIC_PREFIX + String("pulse_4_") + String(id) + MQTT_DISCOVERY_TOPIC_POSTFIX;
-  String topic2 = MQTT_DISCOVERY_TOPIC_PREFIX + String("m3_4_") + String(id) + MQTT_DISCOVERY_TOPIC_POSTFIX;
+  String topic1 = MQTT_DISCOVERY_TOPIC_PREFIX + String("pulse_" SENSOR_VERSION "_") + String(id) + MQTT_DISCOVERY_TOPIC_POSTFIX;
+  String topic2 = MQTT_DISCOVERY_TOPIC_PREFIX + String("m3_" SENSOR_VERSION "_") + String(id) + MQTT_DISCOVERY_TOPIC_POSTFIX;
   char topicBuff[700];
   if (client.connected()) {
     if (on) {
@@ -172,4 +182,8 @@ void sendStateMessages() {
     sprintf(buffer, "{\"value\":%f, \"diff\": 0.001}", ((float)getLiters() / 1000));
     client.publish(stateTopicM3().c_str(), buffer);
   }
+}
+
+String getLastHeartBeatTs() {
+  return lastHeartBeatTs;
 }

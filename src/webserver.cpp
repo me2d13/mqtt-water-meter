@@ -47,6 +47,12 @@ void setupWebServer() {
     response->print("<ul>");
     response->printf("<li>Current number of pulses: %d</li>", getLiters());
     response->print("</ul>");
+    response->print("<h3>Timestamps</h3>");
+    response->print("<ul>");
+    response->printf("<li>Last heartbeat: %s</li>", getLastHeartBeatTs().c_str());
+    response->printf("<li>Last pulse: %s</li>", getLastPulseTs().c_str());
+    response->printf("<li>Last state persist: %s</li>", getLastSavedTs().c_str());
+    response->print("</ul>");
     response->print("<button onclick=\"sendDisco(true)\">Discovery ON</button>");
     response->print("<button onclick=\"sendDisco(false)\">Discovery OFF</button>");
     response->print("</body></html>");

@@ -7,6 +7,7 @@
 #include <ESP8266WiFi.h>
 #include "webserver.h"
 #include "persist.h"
+#include "time_utils.h"
 
 // mosquitto_sub -t /devices/water-metter-5CCF7F802F8D/log
 // mosquitto_sub -t /devices/water-metter-5CCF7F802F8D/m3
@@ -30,13 +31,14 @@ void setupAndWaitForWifi() {
     ESP.restart();
   }
   Serial.println('\n');
-  Serial.println("Connection established!");  
+  Serial.println("Connection established!");
   WiFi.setAutoReconnect(true);
 }
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);  // initialize onboard LED as output
   //pinMode(PIN_RELAY, OUTPUT);  
+  configTime(MY_TZ, "pool.ntp.org");
   Serial.begin(115200);
   Serial.println("Booting");
   setupAndWaitForWifi();
@@ -65,4 +67,5 @@ void blick() {
   digitalWrite(LED_BUILTIN, LOW);
   delay(5);
   digitalWrite(LED_BUILTIN, HIGH);
+  //Serial.println(getTime());
 }

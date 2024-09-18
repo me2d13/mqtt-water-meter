@@ -32,4 +32,6 @@
 #define PERSIST_AFTER_LITERS 50
 #define PERSIST_AFTER_MINUTES 120
 
+#define MY_TZ "CET-1CEST,M3.5.0/02,M10.5.0/03" 
+
 #endif

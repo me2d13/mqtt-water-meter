@@ -16,5 +16,6 @@ String stateTopicM3();
 String controlTopic();
 String logTopic();
 uint8_t sendDiscovery(bool on);
+String getLastHeartBeatTs();
 
 #endif

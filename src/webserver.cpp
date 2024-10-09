@@ -33,6 +33,7 @@ void setupWebServer() {
     response->print("</ul>");
     response->print("<h3>Device</h3>");
     response->print("<ul>");
+    response->print("<li>Version: " SENSOR_VERSION "</li>");
     response->printf("<li>Mac address: %s</li>", WiFi.macAddress().c_str());
     response->printf("<li>Id from mac address: %s</li>", getId());
     response->print("</ul>");

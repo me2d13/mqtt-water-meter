@@ -34,4 +34,10 @@
 
 #define MY_TZ "CET-1CEST,M3.5.0/02,M10.5.0/03" 
 
+// just version of home assistant device + entities, used for 3 reasons:
+// 1) HA UI sometimes has problem to show refreshed entities, so by increasing this number I know 
+//    changes were applied - I'm looking at new version of entities
+// 2) I can have 2 devices with the same sw - one in "prod" and next version in dev
+#define SENSOR_VERSION "6"
+
 #endif

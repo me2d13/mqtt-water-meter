@@ -46,6 +46,9 @@ void connectMqtt() {
       mqttLog(buffer);
       // ... and resubscribe
       client.subscribe(controlTopic().c_str());
+      // Subscribe to Home Assistant status topic to detect HA restarts
+      client.subscribe("homeassistant/status");
+      Serial.println("Subscribed to homeassistant/status");
     } else {
       Serial.print("Mqtt connect failed, rc=");
       Serial.print(client.state());
@@ -86,6 +89,23 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
+  
+  // Check if this is a Home Assistant status message
+  if (strcmp(topic, "homeassistant/status") == 0) {
+    // Check if the payload is "online"
+    if (length == 6 && strncmp((char*)payload, "online", 6) == 0) {
+      Serial.println("Home Assistant came online - sending discovery messages");
+      mqttLog("Home Assistant restart detected - sending discovery");
+      // Add a small random delay (1-3 seconds) to avoid overloading MQTT broker
+      // as recommended by HA documentation
+      delay(random(1000, 3000));
+      sendDiscovery(true);
+      mqttLog("Discovery messages sent after HA restart");
+    }
+    return;
+  }
+  
+  // Handle control topic messages (setting liters value)
   int val = 0;
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, payload);
